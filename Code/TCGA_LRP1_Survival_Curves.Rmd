@@ -1,0 +1,151 @@
+---
+title: "TCGA_LRP1_Death_Curves"
+subtitle: ' Comparing curves in cancer data sets +/- LRP1 mutation'
+author: "Theodore Younker"
+date: "1/15/2018"
+output: html_document
+---
+## Overall Rationale:
+TCGA is a rich depository for survival data across cancer specific data sets. An option exists to search the data sets by gene. This functionality reveals cases of a certain cancer in which a specific mutation is associated. Using this, we can search the database for LRP1 mutations, comparing overall mortality over time between cancers with an LRP1 mutation against those which do not have an LRP1 mutation recorded. Given this data, statistical tests can be performed to determine if the survival rate is different for those who have a given cancer but differ in the presence/absense of an LRP1 mutation.
+
+##Methodology
+For a given cancer type, the overall data documenting survival rate over time is imported. A line of best fit is constructed for this data. Next, the subset of data that is positive for the presence of an LRP1 mutation is imported and constructed into a line of best fit. Statistical tests determine if the lines are significantly different. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##0. Load Packages and Functions
+Load packages containing tools for data manipulation. Load the helper functions created by the team.
+```{r packages_helperfunctions, message=FALSE, warning=FALSE, echo = TRUE}
+library(tidyverse,  warn.conflicts = FALSE)
+library(dplyr,      warn.conflicts = FALSE)
+library(ggplot2,    warn.conflicts = FALSE)
+library(data.table, warn.conflicts = FALSE)
+```
+
+##1. Load in data
+Load in the data for cancer sets with/without LRP1
+```{r loadData}
+dataUCEC <- fread(input = "../Data/UCEC-survival-plot.tsv", sep = "\t")
+dataUCEC_LRP1 <- fread(input = "../Data/UCEC-LRP1-survival-plot.tsv", sep = "\t")
+dataSKCM <- fread(input = "../Data/SKCM-survival-plot.tsv", sep = "\t")
+dataSKCM_LRP1 <- fread(input = "../Data/SKCM-LRP1-survival-plot.tsv", sep = "\t")
+dataCOAD <- fread(input = "../Data/COAD-survival-plot.tsv", sep = "\t")
+dataCOAD_LRP1 <- fread(input = "../Data/COAD-LRP1-survival-plot.tsv", sep = "\t")
+dataSTAD <- fread(input = "../Data/STAD-survival-plot.tsv", sep = "\t")
+dataSTAD_LRP1 <- fread(input = "../Data/STAD-LRP1-survival-plot.tsv", sep = "\t")
+dataSARC <- fread(input = "../Data/SARC-survival-plot.tsv", sep = "\t")
+dataSARC_LRP1 <- fread(input = "../Data/SARC-LRP1-survival-plot.tsv", sep = "\t")
+```
+
+##2. Build Tables
+Combine the data from the mutation positive and negative tables. This requires tagging data to give it a unique identifier. Example, for UCEC data, the data without the mutation is prefixed with "neg_" and the LRP1 mutation positive data is labeled with the "pos_" prefix.
+
+```{r refineTables}
+preUCEC <- subset(dataUCEC, select = c("project_id","time","survivalEstimate"))
+preUCEC$project_id = paste('negative')
+preUCEC_LRP1 <- subset(dataUCEC_LRP1, select = c("project_id", "time", "survivalEstimate"))
+#preUCEC_LRP1$project_id = paste('mut', preUCEC_LRP1$project_id, sep='_')
+preUCEC_LRP1$project_id = paste('positive')
+finalUCEC <- rbind(preUCEC,preUCEC_LRP1)
+
+preSKCM <- subset(dataSKCM, select = c("project_id", "time", "survivalEstimate"))
+preSKCM$project_id = paste("negative")
+preSKCM_LRP1 <- subset(dataSKCM_LRP1, select = c("project_id", "time", "survivalEstimate"))
+preSKCM_LRP1$project_id <- paste("positive")
+finalSKCM <- rbind(preSKCM, preSKCM_LRP1)
+
+preCOAD <- subset(dataCOAD, select = c("project_id", "time", "survivalEstimate"))
+preCOAD$project_id <- paste("negative")
+preCOAD_LRP1 <- subset(dataCOAD_LRP1, select = c("project_id", "time", "survivalEstimate"))
+preCOAD_LRP1$project_id <- paste("positive")
+finalCOAD <- rbind(preCOAD, preCOAD_LRP1)
+
+preSTAD <- subset(dataSTAD, select = c("project_id", "time", "survivalEstimate"))
+preSTAD$project_id <- paste("negative")
+preSTAD_LRP1 <- subset(dataSTAD_LRP1, select = c("project_id", "time", "survivalEstimate"))
+preSTAD_LRP1$project_id <- paste("positive")
+finalSTAD <- rbind(preSTAD, preSTAD_LRP1)
+
+preSARC <- subset(dataSARC, select = c("project_id", "time", "survivalEstimate"))
+preSARC$project_id <- paste("negative")
+preSARC_LRP1 <- subset(dataSARC_LRP1, select = c("project_id", "time", "survivalEstimate"))
+preSARC_LRP1$project_id <- paste("positive")
+finalSARC <- rbind(preSARC, preSARC_LRP1)
+
+rm(preUCEC, preUCEC_LRP1, preSKCM, preSKCM_LRP1, preCOAD, preCOAD_LRP1, preSTAD, preSTAD_LRP1, preSARC, preSARC_LRP1)
+```
+
+##3. Create Curves
+Using the combined final table, create the graph with two regression lines: one for cancer absent mutation, one for cancer present mutation.
+
+Uterine Corpus Endometrial Carcinoma Curve
+```{r displayUCUCCurves}
+scatterPlot0 <- ggplot(finalUCEC, aes(x = finalUCEC$time, y = finalUCEC$survivalEstimate, color = project_id)) + 
+                    geom_point(shape = 5, size = 0.75) +
+                    geom_smooth(se = FALSE, size = 0.85) +
+                    ylab("Survival Rate") +
+                    xlab("Duration (Days)") + 
+                    ggtitle("UCEC Survival Rates +/- LRP1 Mutation") +
+                    theme(plot.title = element_text(hjust = 0.5)) +
+                    labs(color = "Mutation Status", xlab = "H8~Gene~Expression~Level")
+  
+scatterPlot0
+```
+
+Skin Cutaneous Carcinoma Curve
+```{r displaySKCMCurves}
+scatterPlot1 <- ggplot(finalSKCM, aes(x = finalSKCM$time, y = finalSKCM$survivalEstimate, color = project_id)) + 
+                    geom_point(shape = 5, size = 0.75) +
+                    geom_smooth(se = FALSE, size = 0.85) +
+                    ylab("Survival Rate") +
+                    xlab("Duration (Days)") + 
+                    ggtitle("SKCM Survival Rates +/- LRP1 Mutation") +
+                    theme(plot.title = element_text(hjust = 0.5)) +
+                    labs(color = "Mutation Status", xlab = "H8~Gene~Expression~Level")
+  
+scatterPlot1
+```
+
+Colon Adenocarcinoma Curve
+```{r displayCOADCurves}
+scatterPlot2 <- ggplot(finalCOAD, aes(x = finalCOAD$time, y = finalCOAD$survivalEstimate, color = project_id)) + 
+                    geom_point(shape = 5, size = 0.75) +
+                    geom_smooth(se = FALSE, size = 0.85) +
+                    ylab("Survival Rate") +
+                    xlab("Duration (Days)") + 
+                    ggtitle("COAD Survival Rates +/- LRP1 Mutation") +
+                    theme(plot.title = element_text(hjust = 0.5)) +
+                    labs(color = "Mutation Status", xlab = "H8~Gene~Expression~Level")
+  
+scatterPlot2
+```
+
+Stomach Adenocarcinoma Curve
+```{r displaySTADCurves}
+scatterPlot3 <- ggplot(finalSTAD, aes(x = finalSTAD$time, y = finalSTAD$survivalEstimate, color = project_id)) + 
+                    geom_point(shape = 5, size = 0.75) +
+                    geom_smooth(se = FALSE, size = 0.85) +
+                    ylab("Survival Rate") +
+                    xlab("Duration (Days)") + 
+                    ggtitle("STAD Survival Rates +/- LRP1 Mutation") +
+                    theme(plot.title = element_text(hjust = 0.5)) +
+                    labs(color = "Mutation Status", xlab = "H8~Gene~Expression~Level")
+  
+scatterPlot3
+```
+
+Sarcoma Curve
+```{r displaySARCCurves}
+scatterPlot4 <- ggplot(finalSARC, aes(x = finalSARC$time, y = finalSARC$survivalEstimate, color = project_id)) + 
+                    geom_point(shape = 5, size = 0.75) +
+                    geom_smooth(se = FALSE, size = 0.85) +
+                    ylab("Survival Rate") +
+                    xlab("Duration (Days)") + 
+                    ggtitle("SARC Survival Rates +/- LRP1 Mutation") +
+                    theme(plot.title = element_text(hjust = 0.5)) +
+                    labs(color = "Mutation Status", xlab = "H8~Gene~Expression~Level")
+  
+scatterPlot4
+```
