@@ -149,3 +149,29 @@ scatterPlot4 <- ggplot(finalSARC, aes(x = finalSARC$time, y = finalSARC$survival
   
 scatterPlot4
 ```
+
+##4. Calculate ANOVA for Mutliple Regression Lines
+Visualizations are nice, but we need statistical evidence that the two curves differ due to the presence of an LRP1 mutation. Do determine if the lines are significantly different, ANOVA will be performed to compare the two lines present in each cancer-specific dataset.
+
+```{r calcANOVA}
+UCECmodel_mutations <- aov(formula = survivalEstimate~time*project_id, data = finalUCEC)
+UCECmodel <- aov(formula = survivalEstimate~time + project_id, data = finalUCEC)
+anova(UCECmodel_mutations, UCECmodel)
+
+SKCMmodel_mutations <- aov(formula = survivalEstimate~time*project_id, data = finalSKCM)
+SKCMmodel <- aov(formula = survivalEstimate~time + project_id, data = finalSKCM)
+anova(SKCMmodel_mutations, SKCMmodel)
+
+COADmodel_mutations <- aov(formula = survivalEstimate~time*project_id, data = finalCOAD)
+COADmodel <- aov(formula = survivalEstimate~time + project_id, data = finalCOAD)
+anova(COADmodel_mutations, COADmodel)
+
+STADmodel_mutations <- aov(formula = survivalEstimate~time*project_id, data = finalSTAD)
+STADmodel <- aov(formula = survivalEstimate~time + project_id, data = finalSTAD)
+anova(STADmodel_mutations, STADmodel)
+
+SARCmodel_mutations <- aov(formula = survivalEstimate~time*project_id, data = finalSARC)
+SARCmodel <- aov(formula = survivalEstimate~time + project_id, data = finalSARC)
+anova(SARCmodel_mutations, SARCmodel)
+
+```
